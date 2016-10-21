@@ -68,21 +68,26 @@ public class TelegrafWriter implements WriterBasedOutputWriter {
 		for (Result result : results) {
 			for (Map.Entry<String, Object> values : result.getValues().entrySet()) {
 
-				if (isNotValidValue(values.getValue())) {
-					log.debug("Skipping message key[{}] with value: {}.", values.getKey(), values.getValue());
+				String attributeName = values.getKey();
+				Object value = values.getValue();
+				if (isNotValidValue(value)) {
+					log.debug("Skipping message key[{}] with value: {}.", attributeName, value);
 					continue;
 				}
 
 				List<String> tagList = new ArrayList<>();
-				tagList.add("jmxport=" + server.getPort());
+				tagList.add(",jmxport=" + server.getPort());
+				tagList.add("attribute=" + attributeName);
 				for (Map.Entry e : tags.entrySet()) {
 					tagList.add(e.getKey() + "=" + e.getValue());
 				}
 
 				StringBuilder sb = new StringBuilder(result.getKeyAlias())
 					.append(StringUtils.join(tagList, ","))
-					.append(":").append(computeActualValue(values.getValue()))
+					.append(":").append(computeActualValue(value))
 					.append("|").append(bucketType).append("\n");
+
+				//.append(result.getEpoch())
 
 				writer.write(sb.toString());
 			}

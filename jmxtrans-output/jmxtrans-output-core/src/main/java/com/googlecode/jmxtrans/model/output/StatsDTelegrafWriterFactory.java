@@ -23,7 +23,6 @@
 package com.googlecode.jmxtrans.model.output;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.googlecode.jmxtrans.model.OutputWriterFactory;
@@ -50,14 +49,14 @@ import static com.googlecode.jmxtrans.model.output.support.pool.FlushStrategyUti
 
 @EqualsAndHashCode
 @ToString
-public class TelegrafLineProtocolWriterFactory implements OutputWriterFactory {
+public class StatsDTelegrafWriterFactory implements OutputWriterFactory {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TelegrafLineProtocolWriterFactory.class);
+	private static final Logger LOG = LoggerFactory.getLogger(StatsDTelegrafWriterFactory.class);
 
-	@Nonnull
-	private final ImmutableList<String> typeNames;
 	@Nonnull
 	private final String bucketType;
+	@Nonnull
+	private final String sampleRate;
 	@Nonnull
 	private final InetSocketAddress server;
 	@Nonnull
@@ -66,9 +65,9 @@ public class TelegrafLineProtocolWriterFactory implements OutputWriterFactory {
 	private final ImmutableSet<ResultAttribute> resultAttributesToWriteAsTags;
 	private final ImmutableMap<String, String> tags;
 
-	public TelegrafLineProtocolWriterFactory(
-		@JsonProperty("typeNames") ImmutableList<String> typeNames,
+	public StatsDTelegrafWriterFactory(
 		@JsonProperty("bucketType") String bucketType,
+		@JsonProperty("sampleRate") String sampleRate,
 		@JsonProperty("host") String host,
 		@JsonProperty("port") Integer port,
 		@JsonProperty("tags") ImmutableMap<String, String> tags,
@@ -76,9 +75,8 @@ public class TelegrafLineProtocolWriterFactory implements OutputWriterFactory {
 		@JsonProperty("flushStrategy") String flushStrategy,
 		@JsonProperty("flushDelayInSeconds") Integer flushDelayInSeconds,
 		@JsonProperty("poolSize") Integer poolSize) {
-		this.typeNames = firstNonNull(typeNames, ImmutableList.<String>of());
 		this.bucketType = firstNonNull(bucketType, "c");
-		//this.stringValueDefaultCount = firstNonNull(stringValueDefaultCount, 1L);
+		this.sampleRate = firstNonNull(sampleRate, "1");
 		this.server = new InetSocketAddress(
 			checkNotNull(host, "Host cannot be null."),
 			checkNotNull(port, "Port cannot be null."));
@@ -118,10 +116,10 @@ public class TelegrafLineProtocolWriterFactory implements OutputWriterFactory {
 	}
 
 	@Override
-	public WriterPoolOutputWriter<TelegrafWriter> create() {
+	public WriterPoolOutputWriter<StatsDTelegrafWriter> create() {
 		return UdpOutputWriterBuilder.builder(
 			server,
-			new TelegrafWriter(typeNames, bucketType, tags, resultAttributesToWriteAsTags))
+			new StatsDTelegrafWriter(bucketType, sampleRate, tags, resultAttributesToWriteAsTags))
 			.setCharset(UTF_8)
 			.setFlushStrategy(flushStrategy)
 			.setPoolSize(poolSize)
